@@ -1,4 +1,4 @@
-const CACHE = "alisha-nursery-scholars-v21";
+const CACHE = "alisha-nursery-scholars-v22";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
