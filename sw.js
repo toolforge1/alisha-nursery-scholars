@@ -1,4 +1,4 @@
-const CACHE = "alisha-nursery-scholars-v14";
+const CACHE = "alisha-nursery-scholars-v15";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -10,14 +10,31 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
-  event.respondWith(caches.match(event.request).then(cached => {
+  event.respondWith((async () => {
+    const isPage = event.request.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname.endsWith("/");
+    if (isPage) {
+      try {
+        const response = await fetch(event.request, { cache: "no-store" });
+        if (response.ok && response.type === "basic") {
+          const copy = response.clone();
+          caches.open(CACHE).then(cache => cache.put("./index.html", copy));
+        }
+        return response;
+      } catch (_) {
+        return (await caches.match("./index.html")) || Response.error();
+      }
+    }
+    const cached = await caches.match(event.request);
     if (cached) return cached;
-    return fetch(event.request).then(response => {
+    try {
+      const response = await fetch(event.request);
       if (response.ok && response.type === "basic") {
         const copy = response.clone();
         caches.open(CACHE).then(cache => cache.put(event.request, copy));
       }
       return response;
-    }).catch(() => caches.match("./index.html"));
-  }));
+    } catch (_) {
+      return (await caches.match("./index.html")) || Response.error();
+    }
+  })());
 });
